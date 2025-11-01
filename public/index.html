@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Maquidec">
+    <link rel="apple-touch-icon" href="logo-maquidec.jpg"> 
+    <link rel="icon" type="image/png" href="logo-maquidec.jpg"> 
+    <meta name="mobile-web-app-capable" content="yes"> 
+    <meta name="theme-color" content="#D4941C">
+    <title>Sistema de Gestión de Máquinas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+    
+</head>
+<body class="bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Sistema de Gestión</h1>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Usuario</label>
+                    <input type="text" id="username" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Iniciar Sesión
+                </button>
+                <div id="loginError" class="hidden text-red-600 text-sm text-center"></div>
+            </form>
+            <div class="mt-6 text-xs text-gray-500 text-center">
+                <p>Usuarios de prueba:</p>
+                <p>Admin: admin / admin123</p>
+                <p>Trabajador: trabajador / trabajador123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-blue-600 text-white shadow-lg no-print">
+            <div class="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center">
+                <h1 class="text-2xl font-bold mb-2 sm:mb-0">Gestión de Máquinas</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="userInfo" class="text-sm"></span>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm transition">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container mx-auto px-4 py-8">
+            <!-- Form Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8 no-print">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Registro de Máquina</h2>
+                <form id="registroForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" id="registroId">
+                    d
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
+                        <input type="date" id="fecha" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Serie *</label>
+                        <input type="text" id="serie" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Modelo de Máquina *</label>
+                        <input type="text" id="modelo_maquina" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cliente *</label>
+                        <input type="text" id="cliente" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div id="valorField">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Valor</label>
+                        <input type="number" id="valor" step="0.01"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div id="facturaField">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">#Factura</label>
+                        <input type="text" id="factura" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ciudad *</label>
+                        <input type="text" id="ciudad" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Logo *</label>
+                        <select id="logo" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar...</option>
+                            <option value="SI">SI</option>
+                            <option value="NO">NO</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 flex flex-wrap gap-3 mt-4">
+                        <button type="submit" 
+                                class="flex-1 sm:flex-none bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition">
+                            Guardar
+                        </button>
+                        <button type="button" onclick="limpiarFormulario()" 
+                                class="flex-1 sm:flex-none bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition">
+                            Limpiar
+                        </button>
+                        <button type="button" id="exportarBtn" onclick="exportarCSV()" 
+                                class="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Exportar CSV
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table Section -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800">Registros</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Serie</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Modelo</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
+                                <th id="valorHeader" class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Valor</th>
+                                <th id="facturaHeader" class="px-4 py-3 text-left text-sm font-semibold text-gray-700">#Factura</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ciudad</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Logo</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 no-print">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registrosBody" class="divide-y divide-gray-200">
+                            <!-- Los registros se cargarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.usuario;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    showMainApp();
+                } else {
+                    document.getElementById('loginError').textContent = 'Usuario o contraseña incorrectos';
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            } catch (error) {
+                alert('Error de conexión con el servidor');
+            }
+        });
+
+        function showMainApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userInfo').textContent = `${currentUser.username} (${currentUser.rol})`;
+
+            // Ocultar campos según el rol
+            if (currentUser.rol === 'trabajador') {
+                document.getElementById('valorField').classList.add('hidden');
+                document.getElementById('facturaField').classList.add('hidden');
+                document.getElementById('valorHeader').classList.add('hidden');
+                document.getElementById('facturaHeader').classList.add('hidden');
+                document.getElementById('exportarBtn').classList.add('hidden');
+            }
+
+            cargarRegistros();
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('user');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // Verificar sesión al cargar
+        window.addEventListener('load', () => {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainApp();
+            }
+        });
+
+        // Cargar registros
+        async function cargarRegistros() {
+            try {
+                const response = await fetch(`${API_URL}/api/registros`);
+                const registros = await response.json();
+                
+                const tbody = document.getElementById('registrosBody');
+                tbody.innerHTML = '';
+
+                registros.forEach(registro => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50';
+                    
+                    let html = `
+                        <td class="px-4 py-3 text-sm">${registro.fecha}</td>
+                        <td class="px-4 py-3 text-sm">${registro.serie}</td>
+                        <td class="px-4 py-3 text-sm">${registro.modelo_maquina}</td>
+                        <td class="px-4 py-3 text-sm">${registro.cliente}</td>
+                    `;
+
+                    if (currentUser.rol === 'administrador') {
+                        html += `
+                            <td class="px-4 py-3 text-sm">${registro.valor ? '$' + registro.valor : '-'}</td>
+                            <td class="px-4 py-3 text-sm">${registro.factura || '-'}</td>
+                        `;
+                    }
+
+                    html += `
+                        <td class="px-4 py-3 text-sm">${registro.ciudad}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${registro.logo === 'SI' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${registro.logo}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm no-print">
+                            <button onclick="editarRegistro(${registro.id})" 
+                                    class="text-blue-600 hover:text-blue-800 mr-3">Editar</button>
+                            <button onclick="eliminarRegistro(${registro.id})" 
+                                    class="text-red-600 hover:text-red-800">Eliminar</button>
+                        </td>
+                    `;
+
+                    tr.innerHTML = html;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                alert('Error al cargar registros');
+            }
+        }
+
+        // Guardar registro
+        document.getElementById('registroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const registro = {
+                fecha: document.getElementById('fecha').value,
+                serie: document.getElementById('serie').value,
+                modelo_maquina: document.getElementById('modelo_maquina').value,
+                cliente: document.getElementById('cliente').value,
+                valor: document.getElementById('valor').value || null,
+                factura: document.getElementById('factura').value || null,
+                ciudad: document.getElementById('ciudad').value,
+                logo: document.getElementById('logo').value
+            };
+
+            const id = document.getElementById('registroId').value;
+            const url = id ? `${API_URL}/api/registros/${id}` : `${API_URL}/api/registros`;
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(registro)
+                });
+
+                alert(id ? 'Registro actualizado' : 'Registro creado');
+                limpiarFormulario();
+                cargarRegistros();
+            } catch (error) {
+                alert('Error al guardar registro');
+            }
+        });
+
+        async function editarRegistro(id) {
+            try {
+                const response = await fetch(`${API_URL}/api/registros`);
+                const registros = await response.json();
+                const registro = registros.find(r => r.id === id);
+
+                if (registro) {
+                    document.getElementById('registroId').value = registro.id;
+                    document.getElementById('fecha').value = registro.fecha;
+                    document.getElementById('serie').value = registro.serie;
+                    document.getElementById('modelo_maquina').value = registro.modelo_maquina;
+                    document.getElementById('cliente').value = registro.cliente;
+                    if (currentUser.rol === 'administrador') {
+                        document.getElementById('valor').value = registro.valor || '';
+                        document.getElementById('factura').value = registro.factura || '';
+                    }
+                    document.getElementById('ciudad').value = registro.ciudad;
+                    document.getElementById('logo').value = registro.logo;
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } catch (error) {
+                alert('Error al cargar el registro');
+            }
+        }
+
+        async function eliminarRegistro(id) {
+            if (confirm('¿Estás seguro de eliminar este registro?')) {
+                try {
+                    await fetch(`${API_URL}/api/registros/${id}`, {
+                        method: 'DELETE'
+                    });
+                    alert('Registro eliminado');
+                    cargarRegistros();
+                } catch (error) {
+                    alert('Error al eliminar registro');
+                }
+            }
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('registroForm').reset();
+            document.getElementById('registroId').value = '';
+        }
+
+        async function exportarCSV() {
+            try {
+                window.open(`${API_URL}/api/exportar-csv`, '_blank');
+            } catch (error) {
+                alert('Error al exportar CSV');
+            }
+        }
+    </script>
+</body>
+</html>
