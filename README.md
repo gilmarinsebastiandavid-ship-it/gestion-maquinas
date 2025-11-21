@@ -284,14 +284,11 @@ Necesitas crear **6 archivos en total**. Usa cualquier editor de texto.
 #### **Archivo 2: server.js**
 **Ubicación:** `sistema-gestion/server.js`
 
-**Nota:** Este es el archivo del backend que ya tienes en el documento original. Cópialo exactamente como está.
 
 ---
 
 #### **Archivos 3-6: Páginas HTML**
 **Ubicación:** `sistema-gestion/public/`
-
-Copia cada archivo HTML exactamente como te los proporcioné:
 
 1. **`public/index.html`** - Menú principal con 3 módulos
 2. **`public/despachos.html`** - Módulo de despachos
