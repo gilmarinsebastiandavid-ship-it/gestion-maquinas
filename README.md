@@ -5,27 +5,65 @@
 2. [Requisitos Previos](#requisitos-previos)
 3. [Instalación desde Cero](#instalación-desde-cero)
 4. [Configuración del Proyecto](#configuración-del-proyecto)
-5. [Iniciar el Servidor](#iniciar-el-servidor)
-6. [PM2 - Mantener Servidor 24/7](#pm2---mantener-servidor-247)
-7. [Configuración de Tailscale](#configuración-de-tailscale)
-8. [Acceso desde Dispositivos](#acceso-desde-dispositivos)
-9. [Crear Acceso Directo (PWA)](#crear-acceso-directo-pwa)
-10. [Backup y Mantenimiento](#backup-y-mantenimiento)
-11. [Solución de Problemas](#solución-de-problemas)
-12. [Comandos Rápidos](#comandos-rápidos)
+5. [Estructura de Archivos](#estructura-de-archivos)
+6. [Iniciar el Servidor](#iniciar-el-servidor)
+7. [Módulos del Sistema](#módulos-del-sistema)
+8. [Configuración de Tailscale](#configuración-de-tailscale)
+9. [Acceso desde Dispositivos](#acceso-desde-dispositivos)
+10. [Crear Acceso Directo (PWA)](#crear-acceso-directo-pwa)
+11. [Usuarios del Sistema](#usuarios-del-sistema)
+12. [Backup y Mantenimiento](#backup-y-mantenimiento)
+13. [Solución de Problemas](#solución-de-problemas)
+14. [Comandos Rápidos](#comandos-rápidos)
 
 ---
 
 ## 🎯 Descripción del Sistema
 
-Sistema completo de gestión de máquinas con:
-- ✅ Backend Node.js + Express
-- ✅ Base de datos SQLite
-- ✅ Página web responsive (funciona en móvil y PC)
-- ✅ Sistema de usuarios (Administrador / Trabajador)
-- ✅ CRUD completo (Crear, Leer, Actualizar, Eliminar)
-- ✅ Exportar a CSV
-- ✅ Acceso remoto seguro vía Tailscale VPN
+Sistema completo de gestión empresarial con **3 módulos independientes**:
+
+### ✅ Características Generales:
+- **Backend**: Node.js + Express
+- **Base de datos**: SQLite (un solo archivo)
+- **Frontend**: Páginas HTML responsive (móvil y PC)
+- **Sistema de usuarios**: Administrador / Trabajador por módulo
+- **CRUD completo**: Crear, Leer, Actualizar, Eliminar
+- **Exportar CSV**: Disponible para administradores
+- **Acceso remoto**: Seguro vía Tailscale VPN
+
+### 📦 Módulos Disponibles:
+
+#### 1. **Despachos** (`despachos.html`)
+Gestión de despachos de máquinas con:
+- Fecha de despacho
+- Serie de la máquina (única, no se puede repetir)
+- Modelo de máquina
+- Cliente
+- Ciudad (33 ciudades colombianas + opción personalizada)
+- Logo (Sí/No)
+- **Solo Administrador ve**: Valor y #Factura
+
+#### 2. **Solicitudes** (`solicitudes.html`)
+Control de solicitudes de fabricación:
+- Fecha de solicitud
+- Unidades solicitadas
+- Máquina (tipo/modelo)
+- Voltaje
+- Cliente
+- Ciudad (33 ciudades colombianas + opción personalizada)
+- Logo (Sí/No)
+- Diseño del logo (si requiere logo)
+- Estado (Pendiente, En Proceso, Aprobado, Rechazado, Completado, Préstamo)
+
+#### 3. **Pedidos** (`pedidos.html`)
+Gestión de pedidos de materia prima:
+- Sistema de **Categorías y Productos** (totalmente personalizable)
+- Fecha del pedido
+- Cantidad y Unidad (Kg, Gramos, Litros, Unidades, Cajas, Metros, etc.)
+- **Solo Administrador ve**: Precio unitario y totales
+- **Gestión de Categorías**: Crear, editar, eliminar categorías
+- **Gestión de Productos**: Crear, editar, eliminar productos por categoría
+- Historial agrupado por fecha
 
 **Arquitectura:**
 ```
@@ -33,7 +71,7 @@ Sistema completo de gestión de máquinas con:
 │  Servidor (Tu PC)                   │
 │  ├── Node.js (Backend)              │
 │  ├── SQLite (Base de Datos)         │
-│  └── HTML (Página Web)              │
+│  └── HTML (Páginas Web)             │
 │                                     │
 │  Puerto: 3000                       │
 │  IP Tailscale: 100.64.1.10          │
@@ -50,7 +88,11 @@ Sistema completo de gestión de máquinas con:
 │  📱 Android (Chrome)        │
 │  💻 Laptop (Navegador)      │
 │                              │
-│  URL: http://100.64.1.10:3000 │
+│  URLs:                       │
+│  - http://100.64.1.10:3000   │
+│  - http://100.64.1.10:3000/despachos.html  │
+│  - http://100.64.1.10:3000/solicitudes.html│
+│  - http://100.64.1.10:3000/pedidos.html    │
 └──────────────────────────────┘
 ```
 
@@ -207,18 +249,16 @@ mkdir public
 
 ### Paso 2: Crear los Archivos del Proyecto
 
-Necesitas crear 3 archivos. Usa cualquier editor de texto.
+Necesitas crear **6 archivos en total**. Usa cualquier editor de texto.
 
 #### **Archivo 1: package.json**
 **Ubicación:** `sistema-gestion/package.json`
 
-Crea el archivo y copia este contenido:
-
 ```json
 {
   "name": "sistema-gestion-maquinas",
-  "version": "1.0.0",
-  "description": "Sistema de gestión de máquinas con roles de usuario",
+  "version": "3.0.0",
+  "description": "Sistema de gestión de máquinas con 3 módulos independientes",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -244,210 +284,43 @@ Crea el archivo y copia este contenido:
 #### **Archivo 2: server.js**
 **Ubicación:** `sistema-gestion/server.js`
 
-```javascript
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
-
-const app = express();
-const PORT = 3000;
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-// Base de datos SQLite
-const db = new sqlite3.Database('./database.db', (err) => {
-  if (err) {
-    console.error('Error al conectar a la base de datos:', err);
-  } else {
-    console.log('Conectado a la base de datos SQLite');
-  }
-});
-
-// Crear tablas
-db.serialize(() => {
-  // Tabla de usuarios
-  db.run(`CREATE TABLE IF NOT EXISTS usuarios (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    rol TEXT NOT NULL
-  )`);
-
-  // Tabla de registros
-  db.run(`CREATE TABLE IF NOT EXISTS registros (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT NOT NULL,
-    serie TEXT NOT NULL,
-    modelo_maquina TEXT NOT NULL,
-    cliente TEXT NOT NULL,
-    valor REAL,
-    factura TEXT,
-    ciudad TEXT NOT NULL,
-    logo TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // Crear usuarios por defecto si no existen
-  db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
-    if (!row) {
-      db.run("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'administrador')");
-      db.run("INSERT INTO usuarios (username, password, rol) VALUES ('trabajador', 'trabajador123', 'trabajador')");
-      console.log('Usuarios por defecto creados');
-    }
-  });
-});
-
-// Rutas de autenticación
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  
-  db.get('SELECT * FROM usuarios WHERE username = ? AND password = ?', 
-    [username, password], 
-    (err, row) => {
-      if (err) {
-        res.status(500).json({ error: 'Error en el servidor' });
-      } else if (row) {
-        res.json({ 
-          success: true, 
-          usuario: { 
-            id: row.id, 
-            username: row.username, 
-            rol: row.rol 
-          } 
-        });
-      } else {
-        res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
-      }
-    });
-});
-
-// Rutas de registros
-app.get('/api/registros', (req, res) => {
-  db.all('SELECT * FROM registros ORDER BY fecha DESC', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: 'Error al obtener registros' });
-    } else {
-      res.json(rows);
-    }
-  });
-});
-
-app.post('/api/registros', (req, res) => {
-  const { fecha, serie, modelo_maquina, cliente, valor, factura, ciudad, logo } = req.body;
-  
-  db.run(`INSERT INTO registros (fecha, serie, modelo_maquina, cliente, valor, factura, ciudad, logo) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [fecha, serie, modelo_maquina, cliente, valor || null, factura || null, ciudad, logo],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: 'Error al crear registro' });
-      } else {
-        res.json({ id: this.lastID, message: 'Registro creado exitosamente' });
-      }
-    });
-});
-
-app.put('/api/registros/:id', (req, res) => {
-  const { id } = req.params;
-  const { fecha, serie, modelo_maquina, cliente, valor, factura, ciudad, logo } = req.body;
-  
-  db.run(`UPDATE registros 
-          SET fecha = ?, serie = ?, modelo_maquina = ?, cliente = ?, 
-              valor = ?, factura = ?, ciudad = ?, logo = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?`,
-    [fecha, serie, modelo_maquina, cliente, valor || null, factura || null, ciudad, logo, id],
-    function(err) {
-      if (err) {
-        res.status(500).json({ error: 'Error al actualizar registro' });
-      } else {
-        res.json({ message: 'Registro actualizado exitosamente' });
-      }
-    });
-});
-
-app.delete('/api/registros/:id', (req, res) => {
-  const { id } = req.params;
-  
-  db.run('DELETE FROM registros WHERE id = ?', [id], function(err) {
-    if (err) {
-      res.status(500).json({ error: 'Error al eliminar registro' });
-    } else {
-      res.json({ message: 'Registro eliminado exitosamente' });
-    }
-  });
-});
-
-// Exportar CSV
-app.get('/api/exportar-csv', (req, res) => {
-  db.all('SELECT * FROM registros ORDER BY fecha DESC', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: 'Error al exportar' });
-    } else {
-      let csv = 'Fecha,Serie,Modelo de Máquina,Cliente,Valor,#Factura,Ciudad,Logo\n';
-      rows.forEach(row => {
-        csv += `${row.fecha},${row.serie},${row.modelo_maquina},${row.cliente},${row.valor || ''},${row.factura || ''},${row.ciudad},${row.logo}\n`;
-      });
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=registros.csv');
-      res.send(csv);
-    }
-  });
-});
-
-// Servir el frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n========================================`);
-  console.log(`✅ Servidor corriendo exitosamente`);
-  console.log(`========================================`);
-  console.log(`🌐 URL Local: http://localhost:${PORT}`);
-  console.log(`📱 Acceso desde red: http://0.0.0.0:${PORT}`);
-  console.log(`========================================`);
-  console.log(`👤 Usuarios por defecto:`);
-  console.log(`   Admin: admin / admin123`);
-  console.log(`   Trabajador: trabajador / trabajador123`);
-  console.log(`========================================`);
-  console.log(`💡 Para detener el servidor: Ctrl+C`);
-  console.log(`========================================\n`);
-});
-```
+**Nota:** Este es el archivo del backend que ya tienes en el documento original. Cópialo exactamente como está.
 
 ---
 
-#### **Archivo 3: index.html**
-**Ubicación:** `sistema-gestion/public/index.html`
+#### **Archivos 3-6: Páginas HTML**
+**Ubicación:** `sistema-gestion/public/`
 
-Este es el archivo del frontend completo que te proporcioné anteriormente. Copia el código completo del artifact "index.html - Frontend Completo".
+Copia cada archivo HTML exactamente como te los proporcioné:
+
+1. **`public/index.html`** - Menú principal con 3 módulos
+2. **`public/despachos.html`** - Módulo de despachos
+3. **`public/solicitudes.html`** - Módulo de solicitudes
+4. **`public/pedidos.html`** - Módulo de pedidos
 
 ---
 
-### Paso 3: Verificar la Estructura
+## 📁 Estructura de Archivos
 
 Tu carpeta debe verse así:
 
 ```
 sistema-gestion/
-├── package.json          ← Dependencias
-├── server.js            ← Backend
+├── package.json              ← Dependencias del proyecto
+├── server.js                 ← Backend (Node.js + Express)
+├── database.db              ← Base de datos (se crea automáticamente)
 └── public/
-    └── index.html       ← Frontend
+    ├── index.html           ← Menú principal
+    ├── despachos.html       ← Módulo 1: Despachos
+    ├── solicitudes.html     ← Módulo 2: Solicitudes
+    └── pedidos.html         ← Módulo 3: Pedidos
 ```
 
 **Verifica en tu explorador de archivos que todo esté en su lugar.**
 
 ---
 
-### Paso 4: Instalar Dependencias
+### Paso 3: Instalar Dependencias
 
 Abre la terminal en la carpeta del proyecto:
 
@@ -482,7 +355,7 @@ Se creará una carpeta `node_modules/` - esto es normal y esperado.
 
 ## 🚀 Iniciar el Servidor
 
-### Método 1: Inicio Manual (Para Pruebas)
+### Inicio Manual (Para Uso Normal)
 
 ```bash
 # Asegúrate de estar en la carpeta del proyecto
@@ -501,8 +374,20 @@ npm start
 📱 Acceso desde red: http://0.0.0.0:3000
 ========================================
 👤 Usuarios por defecto:
-   Admin: admin / admin123
-   Trabajador: trabajador / trabajador123
+   📦 DESPACHOS:
+      Admin: admin_despachos / admin123
+      Trabajador: trabajador_despachos / trabajador123
+   
+   📋 SOLICITUDES:
+      Admin: admin_solicitudes / admin123
+      Trabajador: trabajador_solicitudes / trabajador123
+   
+   🚚 PEDIDOS:
+      Admin: admin_pedidos / admin123
+      Trabajador: trabajador_pedidos / trabajador123
+   
+   🌟 SUPER ADMIN (Todos los módulos):
+      superadmin / super123
 ========================================
 💡 Para detener el servidor: Ctrl+C
 ========================================
@@ -511,272 +396,261 @@ npm start
 **Probar que funciona:**
 1. Abre tu navegador
 2. Ve a: `http://localhost:3000`
-3. Deberías ver la pantalla de login
+3. Deberías ver el **Menú Principal** con 3 módulos
 
 **Para detener el servidor:**
 - Presiona `Ctrl+C` en la terminal
 
 ---
 
-## 🔥 PM2 - Mantener Servidor 24/7
+## 📚 Módulos del Sistema
 
-PM2 (Process Manager 2) es una herramienta que mantiene tu servidor corriendo siempre:
+### 🏠 Menú Principal (`index.html`)
 
-### ✅ Ventajas de PM2:
-- ✅ Reinicia automáticamente si hay un error
-- ✅ Se inicia al encender la computadora
-- ✅ Logs automáticos de errores
-- ✅ Monitoreo de memoria y CPU
-- ✅ Puede manejar múltiples aplicaciones
-- ✅ Reinicio automático al actualizar código
+**URL:** `http://localhost:3000` o `http://TU_IP_TAILSCALE:3000`
 
----
+**Características:**
+- Muestra 3 tarjetas con los módulos disponibles
+- Estadísticas en tiempo real (total de registros por módulo)
+- Actualización automática cada 30 segundos
+- Diseño responsive (funciona en móvil y PC)
 
-### Paso 1: Instalar PM2 Globalmente
-
-```bash
-npm install -g pm2
-```
-
-**Verificar instalación:**
-```bash
-pm2 --version
-```
-
-Deberías ver algo como: `5.3.0`
-
-**Si dice "pm2 no se reconoce como comando":**
-
-**Windows:**
-```bash
-# Cierra y abre una nueva terminal/CMD
-# Si persiste, agrega npm a las variables de entorno:
-# 1. Win + R → sysdm.cpl → Variables de entorno
-# 2. En Path, agrega: C:\Users\TuUsuario\AppData\Roaming\npm
-```
-
-**Mac/Linux:**
-```bash
-# Agrega a tu PATH
-echo 'export PATH="$PATH:~/.npm-global/bin"' >> ~/.zshrc
-source ~/.zshrc
-
-# O reinstala con sudo
-sudo npm install -g pm2
-```
+**Navegación:**
+- Haz clic en cualquier tarjeta para acceder al módulo
+- Cada módulo tiene su propio login independiente
 
 ---
 
-### Paso 2: Iniciar el Servidor con PM2
+### 📦 Módulo 1: Despachos (`despachos.html`)
 
-```bash
-# Ve a la carpeta del proyecto
-cd sistema-gestion
+**URL:** `http://localhost:3000/despachos.html`
 
-# Inicia con PM2
-pm2 start server.js --name "sistema-gestion"
-```
+**Login:**
+- **Administrador**: `admin_despachos` / `admin123`
+- **Trabajador**: `trabajador_despachos` / `trabajador123`
 
-**Deberías ver:**
-```
-┌─────┬──────────────────┬─────────┬─────────┬──────────┐
-│ id  │ name             │ status  │ restart │ uptime   │
-├─────┼──────────────────┼─────────┼─────────┼──────────┤
-│ 0   │ sistema-gestion  │ online  │ 0       │ 0s       │
-└─────┴──────────────────┴─────────┴─────────┴──────────┘
-```
+**Campos del Formulario:**
 
-**¡Tu servidor está corriendo con PM2!** 🎉
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| Fecha | Fecha | ✅ Sí | Fecha del despacho |
+| Serie | Texto | ✅ Sí | Número de serie **único** (no se puede repetir) |
+| Modelo de Máquina | Texto | ✅ Sí | Modelo/tipo de máquina |
+| Cliente | Texto | ✅ Sí | Nombre del cliente |
+| Ciudad | Select | ✅ Sí | 33 ciudades colombianas + "Otra" |
+| Logo | Select | ✅ Sí | Sí / No |
+| **Valor** | Número | ❌ No | Solo visible para **Administrador** |
+| **#Factura** | Texto | ❌ No | Solo visible para **Administrador** |
 
----
+**Funcionalidades:**
+- ✅ Crear nuevo despacho
+- ✅ Editar despacho existente
+- ✅ Eliminar despacho
+- ✅ Validación de serie única (no permite duplicados)
+- ✅ Exportar CSV (solo administrador)
+- ✅ Campo "Otra ciudad" personalizado
+- ✅ Botón "Menú Principal" para volver
 
-### Paso 3: Guardar la Configuración
+**Permisos por Rol:**
 
-```bash
-pm2 save
-```
-
-Esto guarda tu configuración para que PM2 recuerde tu aplicación.
-
----
-
-### Paso 4: Configurar Auto-inicio al Encender PC
-
-```bash
-pm2 startup
-```
-
-PM2 te mostrará un comando específico para tu sistema. **Copia y ejecuta ese comando.**
-
-**Ejemplo en Windows:**
-```
-[PM2] You have to run this command as administrator:
-pm2 startup windows
-```
-
-**Ejemplo en Linux/Mac:**
-```
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u tuusuario --hp /home/tuusuario
-```
-
-**Copia el comando que te muestre y ejecútalo.**
-
-Después ejecuta de nuevo:
-```bash
-pm2 save
-```
-
-**¡Listo!** Ahora el servidor se iniciará automáticamente cada vez que enciendas tu PC.
+| Función | Administrador | Trabajador |
+|---------|---------------|------------|
+| Ver Valor y #Factura | ✅ Sí | ❌ No |
+| Exportar CSV | ✅ Sí | ❌ No |
+| Crear registros | ✅ Sí | ✅ Sí |
+| Editar registros | ✅ Sí | ✅ Sí |
+| Eliminar registros | ✅ Sí | ✅ Sí |
 
 ---
 
-### Comandos Útiles de PM2
+### 📋 Módulo 2: Solicitudes (`solicitudes.html`)
 
-```bash
-# Ver estado de todas las aplicaciones
-pm2 status
+**URL:** `http://localhost:3000/solicitudes.html`
 
-# Ver detalles de una aplicación
-pm2 show sistema-gestion
+**Login:**
+- **Administrador**: `admin_solicitudes` / `admin123`
+- **Trabajador**: `trabajador_solicitudes` / `trabajador123`
 
-# Ver logs en tiempo real
-pm2 logs sistema-gestion
+**Campos del Formulario:**
 
-# Ver solo errores
-pm2 logs sistema-gestion --err
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| Fecha | Fecha | ✅ Sí | Fecha de la solicitud |
+| Unidades | Número | ✅ Sí | Cantidad de máquinas solicitadas |
+| Máquina | Texto | ✅ Sí | Tipo/modelo de máquina |
+| Voltaje | Texto | ✅ Sí | Especificación eléctrica (ej: 220V, 380V) |
+| Cliente | Texto | ✅ Sí | Nombre del cliente |
+| Ciudad | Select | ✅ Sí | 33 ciudades colombianas + "Otra" |
+| Logo | Select | ✅ Sí | Sí / No |
+| Diseño Logo | Texto | ⚠️ Condicional | Solo si Logo = "Sí" |
+| Estado | Select | ✅ Sí | Ver tabla de estados abajo |
 
-# Reiniciar la aplicación
-pm2 restart sistema-gestion
+**Estados Disponibles:**
 
-# Detener la aplicación
-pm2 stop sistema-gestion
+| Estado | Color | Descripción |
+|--------|-------|-------------|
+| Pendiente | Amarillo | Solicitud recibida, sin procesar |
+| En Proceso | Azul | En fabricación/preparación |
+| Aprobado | Verde | Solicitud aprobada |
+| Rechazado | Rojo | Solicitud rechazada |
+| Completado | Cyan | Solicitud finalizada |
+| Préstamo | Dorado | Máquina en préstamo |
 
-# Eliminar de PM2 (no borra archivos)
-pm2 delete sistema-gestion
+**Funcionalidades:**
+- ✅ Crear nueva solicitud
+- ✅ Editar solicitud existente
+- ✅ Eliminar solicitud
+- ✅ Campo "Diseño Logo" aparece solo si Logo = "Sí"
+- ✅ Campo "Otra ciudad" personalizado
+- ✅ Exportar CSV (solo administrador)
+- ✅ Estados con colores distintivos
+- ✅ Botón "Menú Principal" para volver
 
-# Ver uso de recursos
-pm2 monit
+**Permisos por Rol:**
 
-# Listar todas las apps
-pm2 list
-
-# Reiniciar después de cambios en el código
-pm2 restart sistema-gestion --update-env
-
-# Ver logs antiguos
-pm2 logs sistema-gestion --lines 100
-```
-
----
-
-### Paso 5: Verificar que Funciona
-
-```bash
-# Ver el status
-pm2 status
-```
-
-Debería mostrar:
-```
-┌─────┬──────────────────┬─────────┬─────────┬──────────┐
-│ id  │ name             │ status  │ restart │ uptime   │
-├─────┼──────────────────┼─────────┼─────────┼──────────┤
-│ 0   │ sistema-gestion  │ online  │ 0       │ 5m       │
-└─────┴──────────────────┴─────────┴─────────┴──────────┘
-```
-
-**Status: `online`** = ✅ Funcionando correctamente
+| Función | Administrador | Trabajador |
+|---------|---------------|------------|
+| Exportar CSV | ✅ Sí | ❌ No |
+| Crear solicitudes | ✅ Sí | ✅ Sí |
+| Editar solicitudes | ✅ Sí | ✅ Sí |
+| Eliminar solicitudes | ✅ Sí | ✅ Sí |
+| Cambiar estado | ✅ Sí | ✅ Sí |
 
 ---
 
-### Actualizar el Código con PM2
+### 🚚 Módulo 3: Pedidos (`pedidos.html`)
 
-Cuando hagas cambios en `server.js` o `index.html`:
+**URL:** `http://localhost:3000/pedidos.html`
 
-```bash
-# No necesitas detener PM2
-# Solo reinicia la aplicación
-pm2 restart sistema-gestion
+**Login:**
+- **Administrador**: `admin_pedidos` / `admin123`
+- **Trabajador**: `trabajador_pedidos` / `trabajador123`
 
-# Ver que se reinició correctamente
-pm2 logs sistema-gestion --lines 20
-```
+**Estructura del Módulo:**
 
----
+El módulo de pedidos tiene **3 pestañas principales**:
 
-### Solución de Problemas con PM2
+#### **Pestaña 1: Nuevo Pedido**
 
-#### Problema: "PM2 no arranca al reiniciar PC"
+Crear pedidos de materia prima:
 
-**Solución:**
-```bash
-# Eliminar configuración antigua
-pm2 unstartup
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| Fecha | Fecha | ✅ Sí | Fecha del pedido |
+| Categoría | Select | ✅ Sí | Categoría del producto |
+| Producto | Select | ✅ Sí | Producto (se filtra por categoría) |
+| Cantidad | Número | ✅ Sí | Cantidad solicitada |
+| Unidad | Select | ✅ Sí | Kg, Gramos, Litros, Unidades, Cajas, Metros, etc. |
+| **Precio/Unidad** | Número | ❌ No | Solo visible para **Administrador** |
 
-# Volver a configurar
-pm2 startup
-# Ejecuta el comando que te muestre
+**Unidades Disponibles:**
+- Kg
+- Gramos
+- Litros
+- Mililitros
+- Unidades
+- Cajas
+- Paquetes
+- Metros
+- Pies
+- Pulgadas
 
-# Guardar
-pm2 save
-```
+**Flujo de Trabajo:**
+1. Selecciona la fecha
+2. Selecciona una categoría
+3. Selecciona un producto (se filtran por la categoría elegida)
+4. Ingresa cantidad y unidad
+5. Si eres **administrador**, puedes ingresar el precio unitario
+6. Clic en "➕ Agregar al Pedido"
+7. Repite para agregar más productos
+8. Clic en "💾 Guardar Pedido" cuando termines
 
----
-
-#### Problema: "La aplicación dice 'errored' o 'stopped'"
-
-**Solución:**
-```bash
-# Ver los errores
-pm2 logs sistema-gestion --err
-
-# Reintentar inicio
-pm2 restart sistema-gestion
-
-# Si persiste, eliminar y volver a crear
-pm2 delete sistema-gestion
-pm2 start server.js --name "sistema-gestion"
-pm2 save
-```
-
----
-
-#### Problema: "El servidor no responde después de cambios"
-
-**Solución:**
-```bash
-# Hard restart
-pm2 restart sistema-gestion --update-env
-
-# Si no funciona, detener y volver a iniciar
-pm2 stop sistema-gestion
-pm2 start sistema-gestion
-```
+**Características Especiales:**
+- ✅ Puedes agregar **múltiples productos** antes de guardar
+- ✅ Se muestra una **tabla temporal** con los items agregados
+- ✅ Puedes **eliminar items** antes de guardar
+- ✅ Si eres **administrador**, ves el **total del pedido**
+- ✅ Modo edición para modificar pedidos existentes
 
 ---
 
-#### Problema: "Puerto 3000 ya está en uso"
+#### **Pestaña 2: Historial de Pedidos**
 
-**Solución:**
-```bash
-# Ver qué está usando el puerto 3000
+Ver todos los pedidos registrados:
 
-# Windows
-netstat -ano | findstr :3000
+**Vista:**
+- Pedidos agrupados por fecha
+- Tarjetas con información completa
+- Lista de productos con cantidades
+- Total del pedido (solo administrador)
+- Botones de editar/eliminar (solo administrador)
 
-# Mac/Linux
-lsof -i :3000
+**Funcionalidades:**
+- ✅ Ver historial completo
+- ✅ **Editar pedido** (solo administrador):
+  - Clic en "✏️ Editar"
+  - El pedido se carga en la pestaña "Nuevo Pedido"
+  - Modifica los valores
+  - Clic en "Guardar Pedido"
+- ✅ **Eliminar pedido** (solo administrador)
+- ✅ Exportar CSV (solo administrador)
 
-# Detener proceso con PM2
-pm2 stop sistema-gestion
+---
 
-# O matar el proceso manualmente
-# Windows: taskkill /PID <numero_pid> /F
-# Mac/Linux: kill -9 <pid>
+#### **Pestaña 3: ⚙️ Gestionar Productos** (Solo Administrador)
 
-# Reiniciar
-pm2 start sistema-gestion
-```
+Esta pestaña permite personalizar completamente el catálogo de productos.
+
+**Sub-pestaña: Categorías**
+
+Gestiona las categorías de productos:
+
+| Acción | Descripción |
+|--------|-------------|
+| ➕ Nueva Categoría | Crear nueva categoría |
+| ✏️ Editar | Modificar nombre de categoría |
+| 🗑️ Eliminar | Eliminar categoría (y todos sus productos) |
+
+**Categorías por Defecto:**
+1. Componentes Mecánicos
+2. Componentes Eléctricos
+3. Materiales Metálicos
+4. Elementos Hidráulicos
+5. Elementos Neumáticos
+6. Consumibles
+
+**Sub-pestaña: Productos**
+
+Gestiona los productos por categoría:
+
+| Acción | Descripción |
+|--------|-------------|
+| ➕ Nuevo Producto | Crear producto asociado a una categoría |
+| ✏️ Editar | Modificar nombre y/o categoría |
+| 🗑️ Eliminar | Eliminar producto |
+
+**Ejemplo de Flujo:**
+1. Crear categoría "Tornillería"
+2. Agregar productos:
+   - Tornillo M8 x 50mm
+   - Tuerca M8
+   - Arandela plana M8
+3. Ahora estos productos aparecen al crear un pedido
+
+---
+
+**Permisos por Rol - Módulo Pedidos:**
+
+| Función | Administrador | Trabajador |
+|---------|---------------|------------|
+| Ver precio y totales | ✅ Sí | ❌ No |
+| Editar pedidos | ✅ Sí | ❌ No |
+| Eliminar pedidos | ✅ Sí | ❌ No |
+| Gestionar categorías | ✅ Sí | ❌ No |
+| Gestionar productos | ✅ Sí | ❌ No |
+| Exportar CSV | ✅ Sí | ❌ No |
+| Crear pedidos | ✅ Sí | ✅ Sí |
+| Ver historial | ✅ Sí | ✅ Sí (sin precios) |
 
 ---
 
@@ -859,18 +733,6 @@ Deberías ver algo como:
 
 ---
 
-### Paso 5: Permitir Subredes (Opcional pero Recomendado)
-
-Esto permite que otros dispositivos en Tailscale accedan a tu servidor:
-
-```bash
-# Windows/Mac - Edita desde la app de Tailscale
-# Linux:
-sudo tailscale up --advertise-exit-node
-```
-
----
-
 ## 📱 Acceso desde Dispositivos
 
 ### Desde PC (misma máquina del servidor)
@@ -878,6 +740,13 @@ sudo tailscale up --advertise-exit-node
 Abre tu navegador y ve a:
 ```
 http://localhost:3000
+```
+
+O directamente a un módulo:
+```
+http://localhost:3000/despachos.html
+http://localhost:3000/solicitudes.html
+http://localhost:3000/pedidos.html
 ```
 
 ---
@@ -909,7 +778,8 @@ http://100.64.1.10:3000
 #### Paso 2: Acceder al Sistema
 1. Abre **Safari** (o cualquier navegador)
 2. Ve a: `http://100.64.1.10:3000`
-3. ¡Listo! Verás el login
+3. Verás el **Menú Principal** con los 3 módulos
+4. Selecciona el módulo que necesites
 
 ---
 
@@ -928,41 +798,109 @@ http://100.64.1.10:3000
 #### Paso 2: Acceder al Sistema
 1. Abre **Chrome** (o cualquier navegador)
 2. Ve a: `http://100.64.1.10:3000`
-3. ¡Listo! Verás el login
+3. Verás el **Menú Principal** con los 3 módulos
+4. Selecciona el módulo que necesites
 
 ---
 
 ## 📲 Crear Acceso Directo (PWA)
 
-Puedes agregar la página web a tu pantalla de inicio para que funcione como una app:
+Puedes agregar cada módulo a tu pantalla de inicio para que funcione como una app:
 
 ### iPhone/iPad
 
-1. Abre Safari y ve a `http://100.64.1.10:3000`
+1. Abre Safari y ve a la URL del módulo que quieras:
+   - Menú: `http://100.64.1.10:3000`
+   - Despachos: `http://100.64.1.10:3000/despachos.html`
+   - Solicitudes: `http://100.64.1.10:3000/solicitudes.html`
+   - Pedidos: `http://100.64.1.10:3000/pedidos.html`
 2. Toca el icono de **Compartir** (cuadrado con flecha hacia arriba)
 3. Desliza y toca "**Añadir a pantalla de inicio**"
-4. Cambia el nombre si quieres: "**Sistema Gestión**"
+4. Cambia el nombre si quieres:
+   - "Sistema Gestión"
+   - "Despachos"
+   - "Solicitudes"
+   - "Pedidos"
 5. Toca "**Añadir**"
 
-**¡Listo!** Ahora tienes un icono en tu pantalla principal que abre el sistema como una app.
-
-**Ventajas:**
-- ✅ Abre en pantalla completa (sin barra de Safari)
-- ✅ Icono personalizado
-- ✅ Acceso rápido
-- ✅ Se queda en segundo plano como app
+**¡Listo!** Ahora tienes un icono que abre el módulo como una app.
 
 ---
 
 ### Android
 
-1. Abre Chrome y ve a `http://100.64.1.10:3000`
+1. Abre Chrome y ve a la URL del módulo
 2. Toca el menú (⋮) en la esquina superior derecha
 3. Toca "**Añadir a pantalla de inicio**"
-4. Cambia el nombre si quieres: "**Sistema Gestión**"
+4. Cambia el nombre si quieres
 5. Toca "**Añadir**"
 
-**¡Listo!** Ahora tienes un icono en tu pantalla principal.
+---
+
+## 👤 Usuarios del Sistema
+
+El sistema tiene **usuarios independientes por módulo** + un super administrador.
+
+### 📦 Módulo Despachos
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `admin_despachos` | `admin123` | Administrador |
+| `trabajador_despachos` | `trabajador123` | Trabajador |
+
+**Acceso:** Solo puede entrar a `despachos.html`
+
+---
+
+### 📋 Módulo Solicitudes
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `admin_solicitudes` | `admin123` | Administrador |
+| `trabajador_solicitudes` | `trabajador123` | Trabajador |
+
+**Acceso:** Solo puede entrar a `solicitudes.html`
+
+---
+
+### 🚚 Módulo Pedidos
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `admin_pedidos` | `admin123` | Administrador |
+| `trabajador_pedidos` | `trabajador123` | Trabajador |
+
+**Acceso:** Solo puede entrar a `pedidos.html`
+
+---
+
+### 🌟 Super Administrador
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `superadmin` | `super123` | Administrador |
+
+**Acceso:** Puede entrar a **TODOS los módulos** (despachos, solicitudes y pedidos)
+
+---
+
+### Diferencias entre Roles
+
+#### **Administrador:**
+- ✅ Ve todos los campos (incluyendo precios y valores)
+- ✅ Puede exportar CSV
+- ✅ Puede editar cualquier registro
+- ✅ Puede eliminar registros
+- ✅ Gestiona categorías y productos (en módulo Pedidos)
+- ✅ Acceso completo a todas las funcionalidades
+
+#### **Trabajador:**
+- ✅ Puede crear registros
+- ✅ Puede editar registros
+- ✅ Puede eliminar registros
+- ❌ NO ve campos de precios/valores
+- ❌ NO puede exportar CSV
+- ❌ NO puede gestionar categorías/productos
 
 ---
 
@@ -974,84 +912,147 @@ Puedes agregar la página web a tu pantalla de inicio para que funcione como una
 
 ```bash
 # Windows
-copy database.db database_backup_2025-11-01.db
+copy database.db database_backup_2025-11-21.db
 
 # Mac/Linux
 cp database.db database_backup_$(date +%Y-%m-%d).db
 ```
 
+**Ubicación:** La base de datos `database.db` está en la carpeta raíz del proyecto (`sistema-gestion/`)
+
+---
+
 #### Método 2: Exportar a CSV (desde la aplicación)
 
-1. Inicia sesión como **administrador**
-2. Haz clic en "**Exportar CSV**"
+**Por cada módulo:**
+
+1. Inicia sesión como **administrador** en el módulo
+2. Haz clic en "**📥 Exportar CSV**"
 3. Guarda el archivo en un lugar seguro
+
+**Archivos generados:**
+- `despachos_2025-11-21.csv`
+- `solicitudes_2025-11-21.csv`
+- `pedidos_2025-11-21.csv`
 
 ---
 
 ### Restaurar un Backup
 
 ```bash
-# Detener el servidor
-pm2 stop sistema-gestion
+# Detener el servidor (Ctrl+C)
 
 # Reemplazar la base de datos
 # Windows
-copy database_backup_2025-11-01.db database.db
+copy database_backup_2025-11-21.db database.db
 
 # Mac/Linux
-cp database_backup_2025-11-01.db database.db
+cp database_backup_2025-11-21.db database.db
 
 # Reiniciar el servidor
-pm2 start sistema-gestion
+npm start
+```
+
+---
+
+### Backup Automático Programado
+
+#### **Windows - Script .bat**
+
+Crea un archivo `backup.bat`:
+
+```batch
+@echo off
+cd C:\Users\TuUsuario\Documents\sistema-gestion
+copy database.db backups\database_%date:~-4,4%%date:~-10,2%%date:~-7,2%.db
+echo Backup realizado: %date% %time%
+```
+
+**Programar con Programador de Tareas:**
+1. Abre "Programador de tareas" (Task Scheduler)
+2. Crear tarea básica
+3. Nombre: "Backup Sistema Gestión"
+4. Desencadenador: Diariamente a las 2:00 AM
+5. Acción: Iniciar programa → Selecciona `backup.bat`
+
+---
+
+#### **Mac/Linux - Script .sh**
+
+Crea un archivo `backup.sh`:
+
+```bash
+#!/bin/bash
+cd ~/Documents/sistema-gestion
+mkdir -p backups
+cp database.db backups/database_$(date +%Y%m%d_%H%M%S).db
+echo "Backup realizado: $(date)"
+```
+
+```bash
+# Hacer ejecutable
+chmod +x backup.sh
+
+# Programar con cron (ejecutar diario a las 2 AM)
+crontab -e
+
+# Agregar esta línea:
+0 2 * * * /ruta/completa/a/backup.sh
+```
+
+---
+
+### Limpieza de Backups Antiguos
+
+**Recomendación:** Mantén solo los últimos 30 días de backups.
+
+```bash
+# Windows (PowerShell)
+Get-ChildItem -Path "backups\database_*.db" | 
+  Where-Object {$_.LastWriteTime -lt (Get-Date).AddDays(-30)} | 
+  Remove-Item
+
+# Mac/Linux
+find backups/ -name "database_*.db" -mtime +30 -delete
 ```
 
 ---
 
 ### Actualizar el Sistema
 
-Si haces cambios en el código:
+Si haces cambios en algún archivo HTML o en `server.js`:
 
 ```bash
-# Reiniciar con PM2
-pm2 restart sistema-gestion
+# 1. Detener el servidor (Ctrl+C)
 
-# Ver que todo está bien
-pm2 logs sistema-gestion
-```
+# 2. Hacer backup de la base de datos (opcional pero recomendado)
+cp database.db database_backup_antes_actualizar.db
 
----
+# 3. Reemplazar los archivos modificados
 
-### Limpiar Logs de PM2
-
-Los logs se acumulan con el tiempo. Límpielos periódicamente:
-
-```bash
-# Limpiar logs
-pm2 flush
-
-# O eliminar logs antiguos manualmente
-pm2 logs sistema-gestion --lines 0
+# 4. Reiniciar el servidor
+npm start
 ```
 
 ---
 
 ### Cambiar Contraseñas de Usuario
 
-#### Opción 1: Usar SQLite Browser (Interfaz Gráfica)
+#### Opción 1: Usar DB Browser (Interfaz Gráfica)
 
-1. Descarga DB Browser for SQLite: https://sqlitebrowser.org/
-2. Abre el programa
-3. "Open Database" → Selecciona `database.db`
-4. Ve a la pestaña "Browse Data"
-5. Selecciona la tabla "usuarios"
-6. Haz doble clic en la contraseña que quieras cambiar
+1. Descarga **DB Browser for SQLite**: https://sqlitebrowser.org/
+2. Instala y abre el programa
+3. **File → Open Database** → Selecciona `database.db`
+4. Pestaña **"Browse Data"**
+5. Tabla: **"usuarios"**
+6. Haz doble clic en el campo `password` del usuario que quieras cambiar
 7. Escribe la nueva contraseña
-8. "Write Changes"
+8. **Write Changes**
 9. Cierra el programa
 
 ```bash
 # Reinicia el servidor
-pm2 restart sistema-gestion
+npm start
 ```
 
 ---
@@ -1059,7 +1060,7 @@ pm2 restart sistema-gestion
 #### Opción 2: Usar SQLite CLI
 
 ```bash
-# Instalar SQLite (si no lo tienes)
+# Instalar SQLite
 # Windows: Descarga desde https://www.sqlite.org/download.html
 # Mac: brew install sqlite
 # Linux: sudo apt install sqlite3
@@ -1068,16 +1069,13 @@ pm2 restart sistema-gestion
 sqlite3 database.db
 
 # Ver usuarios actuales
-SELECT * FROM usuarios;
+SELECT id, username, rol, modulo FROM usuarios;
 
-# Cambiar contraseña del admin
-UPDATE usuarios SET password = 'nueva_contraseña_admin' WHERE username = 'admin';
-
-# Cambiar contraseña del trabajador
-UPDATE usuarios SET password = 'nueva_contraseña_trabajador' WHERE username = 'trabajador';
+# Cambiar contraseña de un usuario específico
+UPDATE usuarios SET password = 'nueva_contraseña' WHERE username = 'admin_despachos';
 
 # Verificar cambios
-SELECT * FROM usuarios;
+SELECT username, password, rol FROM usuarios WHERE username = 'admin_despachos';
 
 # Salir
 .exit
@@ -1085,7 +1083,7 @@ SELECT * FROM usuarios;
 
 ```bash
 # Reinicia el servidor
-pm2 restart sistema-gestion
+npm start
 ```
 
 ---
@@ -1096,11 +1094,17 @@ pm2 restart sistema-gestion
 # Abrir base de datos
 sqlite3 database.db
 
-# Agregar nuevo usuario
-INSERT INTO usuarios (username, password, rol) VALUES ('nuevo_usuario', 'contraseña123', 'trabajador');
+# Agregar nuevo usuario para Despachos
+INSERT INTO usuarios (username, password, rol, modulo) 
+VALUES ('juan_despachos', 'juan2025', 'trabajador', 'despachos');
 
-# O agregar admin
-INSERT INTO usuarios (username, password, rol) VALUES ('admin2', 'pass456', 'administrador');
+# Agregar nuevo admin para Solicitudes
+INSERT INTO usuarios (username, password, rol, modulo) 
+VALUES ('maria_solicitudes', 'maria2025', 'administrador', 'solicitudes');
+
+# Agregar usuario para Pedidos
+INSERT INTO usuarios (username, password, rol, modulo) 
+VALUES ('carlos_pedidos', 'carlos2025', 'trabajador', 'pedidos');
 
 # Ver todos los usuarios
 SELECT * FROM usuarios;
@@ -1116,10 +1120,12 @@ SELECT * FROM usuarios;
 ### Problema: "No puedo acceder desde el móvil"
 
 **Checklist de verificación:**
+
 ```bash
 # 1. ¿El servidor está corriendo?
-pm2 status
-# Debe mostrar: status = online
+# En la terminal del servidor debe decir:
+# "✅ Servidor corriendo exitosamente"
+# Si no, ejecuta: npm start
 
 # 2. ¿Tailscale está activo en el servidor?
 tailscale status
@@ -1139,18 +1145,8 @@ tailscale status
 
 **Solución:**
 1. Verifica cada punto del checklist
-2. Reinicia Tailscale en ambos dispositivos:
-   ```bash
-   # Servidor
-   tailscale down
-   tailscale up
-   
-   # Móvil: Desconecta y vuelve a conectar desde la app
-   ```
-3. Reinicia el servidor:
-   ```bash
-   pm2 restart sistema-gestion
-   ```
+2. Reinicia Tailscale en ambos dispositivos
+3. Reinicia el servidor: `npm start`
 
 ---
 
@@ -1162,7 +1158,7 @@ tailscale status
 ```bash
 cd sistema-gestion
 npm install
-pm2 restart sistema-gestion
+npm start
 ```
 
 ---
@@ -1182,7 +1178,7 @@ netstat -ano | findstr :3000
 taskkill /PID 1234 /F
 
 # Reiniciar
-pm2 restart sistema-gestion
+npm start
 ```
 
 **Mac/Linux:**
@@ -1194,7 +1190,7 @@ lsof -i :3000
 kill -9 PID_DEL_PROCESO
 
 # Reiniciar
-pm2 restart sistema-gestion
+npm start
 ```
 
 **O cambiar el puerto:**
@@ -1204,162 +1200,175 @@ Edita `server.js` línea 7:
 const PORT = 3001; // Cambia de 3000 a 3001
 ```
 
-```bash
-pm2 restart sistema-gestion
-```
-
 Ahora accede en: `http://100.64.1.10:3001`
 
 ---
 
-### Problema: "La base de datos está bloqueada"
+### Problema: "Serial duplicado en Despachos"
 
-**Causa:** Múltiples procesos intentando acceder a la base de datos.
+**Causa:** Intentaste ingresar una serie que ya existe en la base de datos.
+
+**Mensaje de error:**
+```
+❌ El serial "ABC123" ya está registrado en el sistema
+```
 
 **Solución:**
-```bash
-# Detener todo
-pm2 stop sistema-gestion
-
-# Esperar 5 segundos
-
-# Volver a iniciar
-pm2 start sistema-gestion
-```
+- Usa un número de serie diferente
+- O edita el registro existente con ese serial
 
 ---
 
-### Problema: "PM2 no se inicia al reiniciar el PC"
+### Problema: "No veo los campos de Precio en Pedidos"
+
+**Causa:** Iniciaste sesión como **trabajador**.
 
 **Solución:**
-```bash
-# Eliminar startup antiguo
-pm2 unstartup
-
-# Configurar de nuevo
-pm2 startup
-
-# Ejecutar el comando que te muestre
-
-# Guardar
-pm2 save
-
-# Reiniciar PC para probar
-```
+1. Cierra sesión
+2. Inicia sesión como **administrador**:
+   - Usuario: `admin_pedidos`
+   - Contraseña: `admin123`
 
 ---
 
-### Problema: "Tailscale dice 'Unable to authenticate'"
+### Problema: "No puedo editar pedidos en Historial"
+
+**Causa:** Solo los **administradores** pueden editar pedidos desde el historial.
 
 **Solución:**
-1. Desinstala Tailscale completamente
-2. Reinicia el PC
-3. Vuelve a instalar Tailscale
-4. Conecta de nuevo
+- Inicia sesión como administrador
+- O pide a un administrador que haga la edición
+
+---
+
+### Problema: "La pestaña Gestionar Productos no aparece"
+
+**Causa:** Iniciaste sesión como **trabajador**.
+
+**Solución:**
+- Solo los **administradores** ven esta pestaña
+- Inicia sesión como `admin_pedidos`
+
+---
+
+### Problema: "No puedo eliminar una categoría"
+
+**Mensaje de error:**
+```
+❌ Error: Puede tener productos asociados
+```
+
+**Causa:** La categoría tiene productos asociados.
+
+**Solución:**
+1. Ve a la pestaña "Productos"
+2. Elimina todos los productos de esa categoría
+3. Vuelve a intentar eliminar la categoría
+
+---
+
+### Problema: "Error al guardar - DiseñoLogo requerido"
+
+**Causa:** Seleccionaste Logo = "Sí" pero no escribiste el diseño.
+
+**Solución:**
+- Si Logo = "Sí", debes llenar el campo "Diseño del Logo"
+- O cambia Logo a "No"
 
 ---
 
 ### Problema: "No puedo exportar CSV"
 
-**Causa:** Necesitas estar logueado como administrador.
+**Causa:** Necesitas ser **administrador**.
 
 **Solución:**
 1. Cierra sesión
-2. Inicia sesión con: `admin / admin123`
-3. Ahora verás el botón "Exportar CSV"
+2. Inicia sesión con usuario administrador del módulo correspondiente
 
 ---
 
-### Problema: "Error al guardar registro"
+### Problema: "CSV con caracteres raros (tildes)"
 
-**Checklist:**
-- [ ] ¿Todos los campos obligatorios están llenos?
-  - Fecha, Serie, Modelo, Cliente, Ciudad, Logo
-- [ ] ¿El servidor está corriendo?
-  ```bash
-  pm2 status
-  ```
-- [ ] ¿Hay conexión a internet/Tailscale?
+**Causa:** Excel no está leyendo correctamente UTF-8.
 
-**Ver logs del error:**
-```bash
-pm2 logs sistema-gestion --err
-```
+**Solución:**
+
+**Método 1 - Abrir CSV correctamente en Excel:**
+1. Abre Excel (hoja en blanco)
+2. **Datos → Desde texto/CSV**
+3. Selecciona el archivo
+4. Origen del archivo: **65001: Unicode (UTF-8)**
+5. Clic en "Cargar"
+
+**Método 2 - Usar Google Sheets:**
+1. Abre Google Sheets
+2. **Archivo → Importar**
+3. Selecciona el CSV
+4. Se mostrará correctamente
 
 ---
 
-### Problema: "La página web se ve rota o sin estilos"
+### Problema: "La página se ve sin estilos"
 
-**Causa:** El navegador cacheó una versión antigua.
+**Causa:** El navegador tiene caché antigua.
 
 **Solución:**
 1. **Forzar recarga:**
    - Chrome/Edge/Firefox: `Ctrl+Shift+R` (Windows/Linux) o `Cmd+Shift+R` (Mac)
    - Safari: `Cmd+Option+R`
 
-2. **Limpiar caché del navegador:**
+2. **Limpiar caché:**
    - Chrome: `Ctrl+Shift+Delete` → Limpiar caché
-   - Safari: Ajustes → Safari → Limpiar historial y datos
-
-3. **Modo incógnito:**
-   - Abre una ventana incógnita/privada
-   - Ve a la URL
-   - Si funciona, el problema es el caché
+   - Safari: Ajustes → Safari → Limpiar historial
 
 ---
 
-### Problema: "No veo los campos Valor y #Factura"
+### Problema: "Base de datos corrupta"
 
-**Eso es normal** si iniciaste sesión como **trabajador**.
+**Síntomas:**
+- Errores al guardar
+- Datos que desaparecen
+- El servidor no arranca
 
-Solo los **administradores** ven esos campos.
+**Solución:**
+```bash
+# 1. Detener el servidor (Ctrl+C)
 
-**Solución:** Inicia sesión con `admin / admin123`
+# 2. Verificar la base de datos
+sqlite3 database.db "PRAGMA integrity_check;"
+
+# 3. Si dice "ok", la DB está bien
+# Si dice errores, restaurar backup:
+cp database_backup_FECHA.db database.db
+
+# 4. Reiniciar servidor
+npm start
+```
 
 ---
 
 ## 📋 Comandos Rápidos
 
-### Comandos de PM2
+### Servidor
 
 ```bash
-# Ver estado
-pm2 status
+# Iniciar servidor
+npm start
 
-# Iniciar
-pm2 start sistema-gestion
+# Detener servidor
+Ctrl+C
 
-# Detener
-pm2 stop sistema-gestion
+# Ver si está corriendo (en otra terminal)
+# Windows
+netstat -ano | findstr :3000
 
-# Reiniciar
-pm2 restart sistema-gestion
-
-# Ver logs en tiempo real
-pm2 logs sistema-gestion
-
-# Ver logs de errores
-pm2 logs sistema-gestion --err
-
-# Limpiar logs
-pm2 flush
-
-# Eliminar de PM2
-pm2 delete sistema-gestion
-
-# Monitorear recursos
-pm2 monit
-
-# Guardar configuración
-pm2 save
-
-# Ver lista completa
-pm2 list
+# Mac/Linux
+lsof -i :3000
 ```
 
 ---
 
-### Comandos de Tailscale
+### Tailscale
 
 ```bash
 # Ver IP
@@ -1374,16 +1383,13 @@ tailscale up
 # Desconectar
 tailscale down
 
-# Ver máquinas conectadas
+# Ver dispositivos conectados
 tailscale status --peers
-
-# Hacer ping a otro dispositivo
-tailscale ping 100.64.1.20
 ```
 
 ---
 
-### Comandos de Base de Datos
+### Base de Datos
 
 ```bash
 # Abrir base de datos
@@ -1395,14 +1401,31 @@ sqlite3 database.db
 # Ver usuarios
 SELECT * FROM usuarios;
 
-# Ver registros
-SELECT * FROM registros;
+# Ver despachos
+SELECT * FROM despachos;
 
-# Contar registros
-SELECT COUNT(*) FROM registros;
+# Ver solicitudes
+SELECT * FROM solicitudes;
 
-# Ver últimos 10 registros
-SELECT * FROM registros ORDER BY created_at DESC LIMIT 10;
+# Ver pedidos
+SELECT * FROM pedidos;
+
+# Ver categorías
+SELECT * FROM categorias;
+
+# Ver productos
+SELECT * FROM productos;
+
+# Contar registros por tabla
+SELECT COUNT(*) FROM despachos;
+SELECT COUNT(*) FROM solicitudes;
+SELECT COUNT(*) FROM pedidos;
+
+# Ver últimos 10 despachos
+SELECT * FROM despachos ORDER BY fecha DESC LIMIT 10;
+
+# Buscar por cliente
+SELECT * FROM despachos WHERE cliente LIKE '%nombre%';
 
 # Salir
 .exit
@@ -1410,314 +1433,191 @@ SELECT * FROM registros ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-### Comandos de Backup
+### Backup
 
 ```bash
 # Backup manual
 # Windows
-copy database.db backup\database_%date%.db
+copy database.db backup\database_%date:~-4,4%%date:~-7,2%%date:~-10,2%.db
 
 # Mac/Linux
-cp database.db backup/database_$(date +%Y%m%d).db
+cp database.db backups/database_$(date +%Y%m%d).db
 
 # Restaurar backup
 # Windows
-copy backup\database_20251101.db database.db
+copy backups\database_20251121.db database.db
 
 # Mac/Linux
-cp backup/database_20251101.db database.db
+cp backups/database_20251121.db database.db
 ```
 
 ---
 
-## 🎯 Flujo de Trabajo Diario
+## 🎯 Flujo de Trabajo Recomendado
 
-### Al empezar el día:
+### Para Trabajadores
+
+**Despachos:**
+1. Accede a `http://IP:3000/despachos.html`
+2. Login con `trabajador_despachos`
+3. Clic en "➕ Nuevo Registro"
+4. Llena: Fecha, Serie, Modelo, Cliente, Ciudad, Logo
+5. Guardar
+
+**Solicitudes:**
+1. Accede a `http://IP:3000/solicitudes.html`
+2. Login con `trabajador_solicitudes`
+3. Clic en "➕ Nueva Solicitud"
+4. Llena todos los campos
+5. Selecciona estado inicial (generalmente "Pendiente")
+6. Guardar
+
+**Pedidos:**
+1. Accede a `http://IP:3000/pedidos.html`
+2. Login con `trabajador_pedidos`
+3. Selecciona fecha
+4. Agrega productos uno por uno
+5. Cuando termines, clic en "💾 Guardar Pedido"
+
+---
+
+### Para Administradores
+
+**Tareas Adicionales:**
+
+1. **Revisar reportes:**
+   - Exportar CSV mensualmente
+   - Analizar datos en Excel/Google Sheets
+
+2. **Gestionar productos (Pedidos):**
+   - Crear nuevas categorías según necesidad
+   - Agregar productos nuevos
+   - Limpiar productos obsoletos
+
+3. **Mantenimiento:**
+   - Backup semanal de la base de datos
+   - Verificar usuarios activos
+   - Actualizar contraseñas cada 3-6 meses
+
+4. **Editar/Corregir:**
+   - Corregir errores en registros históricos
+   - Actualizar precios en pedidos
+   - Cambiar estados de solicitudes
+
+---
+
+## 🚀 Mejoras Futuras (Opcionales)
+
+### Ideas para Expandir el Sistema:
+
+1. **Búsqueda y Filtros:**
+   - Buscar por cliente, fecha, ciudad
+   - Filtrar por estado (solicitudes)
+   - Ordenar por columnas
+
+2. **Gráficas y Estadísticas:**
+   - Gráfico de despachos por mes
+   - Solicitudes por estado
+   - Gastos en pedidos (administradores)
+
+3. **Notificaciones:**
+   - Alertas de solicitudes pendientes
+   - Recordatorios de mantenimiento
+
+4. **Fotos:**
+   - Subir imágenes de las máquinas
+   - Galería de diseños de logos
+
+5. **Historial de Cambios:**
+   - Ver quién modificó qué y cuándo
+   - Auditoría completa
+
+6. **Múltiples Sucursales:**
+   - Filtrar por ubicación
+   - Permisos por sucursal
+
+7. **App Móvil Nativa:**
+   - Versión para iOS/Android
+   - Funcionar sin conexión (offline)
+
+8. **Integraciones:**
+   - Sincronizar con sistemas contables
+   - Enviar facturas por email
+   - WhatsApp notifications
+
+---
+
+## 📞 Soporte y Contacto
+
+### Si tienes problemas:
+
+1. **Revisa esta documentación** primero
+2. **Verifica los logs** del servidor en la terminal
+3. **Prueba en modo incógnito** para descartar problemas de caché
+4. **Revisa la base de datos** con DB Browser
+
+### Logs Útiles:
 
 ```bash
-# 1. Verificar que el servidor está corriendo
-pm2 status
-
-# 2. Si está detenido, iniciarlo
-pm2 start sistema-gestion
-
-# 3. Ver los logs para verificar que todo está bien
-pm2 logs sistema-gestion --lines 20
-```
-
----
-
-### Durante el día:
-
-- Accede desde cualquier dispositivo: `http://100.64.1.10:3000`
-- Todos los cambios se guardan automáticamente
-- No necesitas hacer nada especial
-
----
-
-### Al finalizar el día:
-
-```bash
-# 1. Hacer backup de la base de datos
-cp database.db backups/database_$(date +%Y%m%d).db
-
-# 2. Opcional: Ver estadísticas del día
-pm2 show sistema-gestion
-
-# El servidor sigue corriendo - PM2 lo mantiene activo 24/7
-```
-
----
-
-## 📊 Monitoreo y Estadísticas
-
-### Ver uso de recursos
-
-```bash
-# Monitor en tiempo real
-pm2 monit
-
-# Ver memoria y CPU
-pm2 show sistema-gestion
-```
-
----
-
-### Ver información del sistema
-
-```bash
-# Información completa
-pm2 info sistema-gestion
-
-# Ver uptime
-pm2 status
-
-# Ver logs históricos
-pm2 logs sistema-gestion --lines 100
-```
-
----
-
-## 🔐 Seguridad
-
-### Cambiar Contraseñas Periódicamente
-
-**Recomendación:** Cambia las contraseñas cada 3-6 meses.
-
-```bash
-sqlite3 database.db
-UPDATE usuarios SET password = 'nueva_contraseña_segura' WHERE username = 'admin';
-.exit
-
-pm2 restart sistema-gestion
-```
-
----
-
-### Backup Automático
-
-Crea un script para hacer backups automáticos:
-
-**Linux/Mac - `backup.sh`:**
-```bash
-#!/bin/bash
-cd ~/sistema-gestion
-cp database.db backups/database_$(date +%Y%m%d_%H%M%S).db
-echo "Backup realizado: $(date)"
-```
-
-```bash
-# Hacer ejecutable
-chmod +x backup.sh
-
-# Agregar a cron (ejecutar diario a las 2 AM)
-crontab -e
-# Agregar línea:
-0 2 * * * /ruta/a/backup.sh
-```
-
-**Windows - `backup.bat`:**
-```batch
-@echo off
-cd C:\ruta\sistema-gestion
-copy database.db backups\database_%date:~-4,4%%date:~-10,2%%date:~-7,2%.db
-echo Backup realizado: %date% %time%
-```
-
-Programar con Programador de Tareas de Windows (Task Scheduler).
-
----
-
-## 📱 URLs de Acceso Rápido
-
-Guarda estos enlaces para acceso rápido:
-
-### Desde el servidor local:
-```
-http://localhost:3000
-```
-
-### Desde cualquier dispositivo con Tailscale:
-```
-http://100.64.1.10:3000
-```
-(Reemplaza con tu IP de Tailscale)
-
-### Panel de administración de Tailscale:
-```
-https://login.tailscale.com/admin/machines
-```
-
----
-
-## ✅ Checklist de Verificación Completa
-
-### Instalación Inicial:
-- [ ] Node.js instalado (`node --version`)
-- [ ] npm funciona (`npm --version`)
-- [ ] Carpetas creadas (sistema-gestion/public)
-- [ ] Archivos copiados (package.json, server.js, index.html)
-- [ ] Dependencias instaladas (`npm install`)
-- [ ] Servidor funciona (`npm start`)
-- [ ] Página web carga en `http://localhost:3000`
-
-### PM2:
-- [ ] PM2 instalado (`pm2 --version`)
-- [ ] Servidor iniciado con PM2 (`pm2 start server.js`)
-- [ ] Configuración guardada (`pm2 save`)
-- [ ] Auto-inicio configurado (`pm2 startup`)
-- [ ] Servidor aparece como "online" (`pm2 status`)
-
-### Tailscale:
-- [ ] Tailscale instalado en servidor
-- [ ] Tailscale conectado en servidor
-- [ ] IP de Tailscale obtenida (`tailscale ip -4`)
-- [ ] Tailscale instalado en móvil
-- [ ] Tailscale conectado en móvil
-- [ ] Ambos dispositivos visibles en panel web
-
-### Acceso:
-- [ ] Puedo acceder desde PC: `http://localhost:3000`
-- [ ] Puedo acceder desde móvil: `http://IP_TAILSCALE:3000`
-- [ ] Login funciona (admin / admin123)
-- [ ] Puedo crear registros
-- [ ] Puedo editar registros
-- [ ] Puedo eliminar registros
-- [ ] Puedo exportar CSV (como admin)
-
-### Backup:
-- [ ] Primer backup creado
-- [ ] Ubicación de backups definida
-- [ ] Sé cómo restaurar un backup
-
----
-
-## 🎓 Conceptos Importantes
-
-### ¿Qué es Node.js?
-Plataforma que permite ejecutar JavaScript en el servidor (fuera del navegador).
-
-### ¿Qué es Express?
-Framework que facilita crear servidores web con Node.js.
-
-### ¿Qué es SQLite?
-Base de datos que guarda todo en un solo archivo (`database.db`). No requiere servidor separado.
-
-### ¿Qué es PM2?
-Gestor de procesos que mantiene tu aplicación corriendo 24/7, la reinicia si falla, y la inicia al encender el PC.
-
-### ¿Qué es Tailscale?
-VPN que crea una red privada entre tus dispositivos. Permite acceder a tu servidor desde cualquier lugar de forma segura, sin abrir puertos.
-
-### ¿Qué es localhost?
-Dirección especial (127.0.0.1) que apunta a tu propia computadora.
-
-### ¿Qué es un puerto?
-Canal de comunicación. El puerto 3000 es donde nuestro servidor "escucha" las peticiones.
-
----
-
-## 🚀 Próximos Pasos
-
-Una vez que tengas todo funcionando:
-
-### Mejoras Opcionales:
-1. **PWA completa:** Agregar manifest.json para funcionamiento offline
-2. **Búsqueda:** Filtrar registros por fecha, cliente, ciudad
-3. **Gráficas:** Visualizar estadísticas de máquinas
-4. **Fotos:** Subir imágenes de las máquinas
-5. **Notificaciones:** Avisos de mantenimiento
-6. **Multi-usuario:** Más roles y permisos
-7. **Historial:** Ver quién modificó qué y cuándo
-
----
-
-## 📞 Soporte
-
-### Revisar Logs:
-```bash
-# Ver qué está pasando
-pm2 logs sistema-gestion
-
-# Ver solo errores
-pm2 logs sistema-gestion --err
-
-# Ver más líneas
-pm2 logs sistema-gestion --lines 200
-```
-
-### Reinicio Completo:
-```bash
-# Si nada funciona, reinicio completo:
-pm2 stop sistema-gestion
-pm2 delete sistema-gestion
-cd sistema-gestion
-pm2 start server.js --name "sistema-gestion"
-pm2 save
+# Ver qué está pasando en tiempo real
+# (Mantén esto abierto mientras pruebas)
+
+# Terminal donde corre el servidor mostrará:
+# - Peticiones HTTP
+# - Errores de la base de datos
+# - Problemas de autenticación
 ```
 
 ---
 
 ## 📚 Recursos Adicionales
 
-- **Node.js:** https://nodejs.org/docs/
-- **Express:** https://expressjs.com/
-- **SQLite:** https://www.sqlite.org/docs.html
-- **PM2:** https://pm2.keymetrics.io/docs/usage/quick-start/
-- **Tailscale:** https://tailscale.com/kb/
+- **Node.js Docs:** https://nodejs.org/docs/
+- **Express Guide:** https://expressjs.com/en/guide/routing.html
+- **SQLite Tutorial:** https://www.sqlitetutorial.net/
+- **Tailscale Docs:** https://tailscale.com/kb/
+- **HTML/CSS/JS:** https://developer.mozilla.org/
 
 ---
 
 ## 🎉 ¡Felicidades!
 
-Si llegaste hasta aquí y completaste todos los pasos, ahora tienes:
+Si completaste todos los pasos, ahora tienes:
 
-✅ Un sistema completo de gestión de máquinas
+✅ Sistema completo con 3 módulos independientes
+✅ Menú principal con estadísticas
 ✅ Accesible desde PC, iPhone, Android
-✅ Servidor corriendo 24/7 con PM2
+✅ Servidor corriendo 24/7
 ✅ Acceso remoto seguro con Tailscale
-✅ Base de datos persistente
-✅ Sistema de backups
-✅ Página web responsive
+✅ Base de datos SQLite persistente
+✅ Sistema de usuarios por módulo
+✅ Exportación a CSV
+✅ Gestión completa de productos (Pedidos)
+✅ Validación de series únicas (Despachos)
+✅ Estados con colores (Solicitudes)
 
-**¡Tu sistema está listo para usar en producción!** 🚀
+**¡Tu sistema está listo para producción!** 🚀
 
 ---
 
 ## 📝 Registro de Cambios
 
-### Versión 1.0.0 (2025-11-01)
-- ✅ Sistema inicial completo
-- ✅ Backend Node.js + Express
-- ✅ Frontend HTML responsive
-- ✅ Base de datos SQLite
-- ✅ Autenticación con roles
-- ✅ CRUD completo
-- ✅ Exportar CSV
-- ✅ Integración con Tailscale
-- ✅ Configuración PM2
-- ✅ Documentación completa
+### Versión 3.0.0 (2025-11-21)
+- ✅ Sistema modular con 3 módulos independientes
+- ✅ Menú principal con navegación
+- ✅ Módulo de Despachos completo
+- ✅ Módulo de Solicitudes completo
+- ✅ Módulo de Pedidos con gestión de categorías/productos
+- ✅ Usuarios independientes por módulo
+- ✅ Super administrador con acceso total
+- ✅ Validación de series únicas en Despachos
+- ✅ Campo "Otra ciudad" personalizable
+- ✅ Exportación CSV con UTF-8 correcto
+- ✅ Diseño responsive para móvil
+- ✅ Documentación completa actualizada
 
 ---
 
-**Desarrollado con ❤️ para gestión eficiente de máquinas**
+**Desarrollado con ❤️ para gestión empresarial eficiente**
+
+**Sistema de Gestión v3.0 | © 2025**
