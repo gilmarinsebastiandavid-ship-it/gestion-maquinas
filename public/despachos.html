@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despachos - Sistema de Gestión</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ===== PANTALLA DE LOGIN ===== */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            animation: fadeIn 0.5s ease;
+            border: 2px solid #FFD700;
+        }
+
+        .login-box h2 {
+            text-align: center;
+            color: #FFD700;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #FFC107 0%, #FFD700 100%);
+        }
+
+        .btn-back {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .btn-back:hover {
+            color: #FFD700;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* ===== PANTALLA PRINCIPAL ===== */
+        .main-container {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #FFD700;
+        }
+
+        .header h1 {
+            color: #FFD700;
+            font-size: 1.8rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: #FFD700;
+            color: #1a1a1a;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: #ff4757;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #e84118;
+        }
+
+        .btn-home {
+            background: #2c2c2c;
+            color: #FFD700;
+            padding: 10px 20px;
+            border: 2px solid #FFD700;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-home:hover {
+            background: #FFD700;
+            color: #1a1a1a;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #FFC107 0%, #FFD700 100%);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #27ae60;
+        }
+
+        .content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #1a1a1a;
+            color: #FFD700;
+            font-weight: 600;
+            border-bottom: 2px solid #FFD700;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2980b9;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            border: 2px solid #FFD700;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #FFD700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #FFD700;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .user-info {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th,
+            td {
+                padding: 8px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h2>📦 Módulo de Despachos</h2>
+            <div id="loginError" class="error-message"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Usuario:</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn-login">Iniciar Sesión</button>
+                <a href="index.html" class="btn-back">← Volver al Menú Principal</a>
+            </form>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="mainScreen" class="main-container">
+        <div class="header">
+            <h1>📦 Gestión de Despachos</h1>
+            <div class="user-info">
+                <a href="index.html" class="btn-home">🏠 Menú Principal</a>
+                <span class="user-badge" id="userBadge"></span>
+                <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-row">
+                <button class="btn btn-primary" onclick="abrirModal()">➕ Nuevo Registro</button>
+                <button class="btn btn-success" onclick="exportarCSV()" id="btnExportar" style="display:none;">📥 Exportar CSV</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <h3>Lista de Despachos</h3>
+            <table id="tablaRegistros">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Serie</th>
+                        <th>Modelo</th>
+                        <th>Cliente</th>
+                        <th id="colValor" style="display:none;">Valor</th>
+                        <th id="colFactura" style="display:none;">#Factura</th>
+                        <th>Ciudad</th>
+                        <th>Logo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAL PARA CREAR/EDITAR -->
+    <div id="modalRegistro" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nuevo Registro</h2>
+                <span class="close" onclick="cerrarModal()">&times;</span>
+            </div>
+            <form id="formRegistro">
+                <div class="form-group">
+                    <label>Fecha *</label>
+                    <input type="date" id="fecha" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Serie *</label>
+                        <input type="text" id="serie" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Modelo de Máquina *</label>
+                        <input type="text" id="modelo_maquina" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cliente *</label>
+                    <input type="text" id="cliente" required>
+                </div>
+
+                <div class="form-row" id="grupoAdminFields" style="display:none;">
+                    <div class="form-group">
+                        <label>Valor</label>
+                        <input type="number" step="0.01" id="valor" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>#Factura</label>
+                        <input type="text" id="factura" placeholder="Ej: F-001">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ciudad *</label>
+                        <select id="ciudadSelect" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Arauca">Arauca</option>
+                            <option value="Armenia">Armenia</option>
+                            <option value="Barranquilla">Barranquilla</option>
+                            <option value="Bogotá">Bogotá</option>
+                            <option value="Bucaramanga">Bucaramanga</option>
+                            <option value="Cali">Cali</option>
+                            <option value="Cartagena">Cartagena</option>
+                            <option value="Cúcuta">Cúcuta</option>
+                            <option value="Florencia">Florencia</option>
+                            <option value="Ibagué">Ibagué</option>
+                            <option value="Inírida">Inírida</option>
+                            <option value="Leticia">Leticia</option>
+                            <option value="Manizales">Manizales</option>
+                            <option value="Medellín">Medellín</option>
+                            <option value="Mitú">Mitú</option>
+                            <option value="Mocoa">Mocoa</option>
+                            <option value="Montería">Montería</option>
+                            <option value="Neiva">Neiva</option>
+                            <option value="Pasto">Pasto</option>
+                            <option value="Pereira">Pereira</option>
+                            <option value="Popayán">Popayán</option>
+                            <option value="Puerto Carreño">Puerto Carreño</option>
+                            <option value="Puerto Inírida">Puerto Inírida</option>
+                            <option value="Quibdó">Quibdó</option>
+                            <option value="Riohacha">Riohacha</option>
+                            <option value="San Andrés">San Andrés</option>
+                            <option value="San José del Guaviare">San José del Guaviare</option>
+                            <option value="Santa Marta">Santa Marta</option>
+                            <option value="Sincelejo">Sincelejo</option>
+                            <option value="Tunja">Tunja</option>
+                            <option value="Valledupar">Valledupar</option>
+                            <option value="Villavicencio">Villavicencio</option>
+                            <option value="Yopal">Yopal</option>
+                            <option value="Otra">Otra ciudad...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Logo *</label>
+                        <select id="logo" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Sí">Sí</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="otraCiudadContainer" style="display:none;">
+                    <label>Especifique ciudad *</label>
+                    <input type="text" id="otraCiudad" placeholder="Escriba el nombre de la ciudad">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:20px;">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let usuarioActual = null;
+        let registroEditando = null;
+
+        // ===== FUNCIÓN PARA MOSTRAR/OCULTAR "OTRA CIUDAD" =====
+        function toggleOtraCiudad() {
+            const select = document.getElementById('ciudadSelect');
+            const container = document.getElementById('otraCiudadContainer');
+            const inputOtra = document.getElementById('otraCiudad');
+            
+            if (select.value === 'Otra') {
+                container.style.display = 'block';
+                inputOtra.required = true;
+            } else {
+                container.style.display = 'none';
+                inputOtra.required = false;
+                inputOtra.value = '';
+            }
+        }
+
+        // ===== LOGIN =====
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, modulo: 'despachos' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    usuarioActual = data.usuario;
+                    mostrarPantallaPrincipal();
+                } else {
+                    mostrarError('Usuario o contraseña incorrectos');
+                }
+            } catch (error) {
+                mostrarError('Error al conectar con el servidor');
+            }
+        });
+
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = mensaje;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 3000);
+        }
+
+        function mostrarPantallaPrincipal() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'block';
+            document.getElementById('userBadge').textContent = 
+                `${usuarioActual.username} (${usuarioActual.rol})`;
+            
+            // PRIMERO: Ocultar TODOS los campos de admin por defecto
+            document.getElementById('grupoAdminFields').style.display = 'none';
+            document.getElementById('colValor').style.display = 'none';
+            document.getElementById('colFactura').style.display = 'none';
+            document.getElementById('btnExportar').style.display = 'none';
+            
+            // SEGUNDO: Si es admin, mostrarlos
+            if (usuarioActual.rol === 'administrador') {
+                document.getElementById('grupoAdminFields').style.display = 'grid';
+                document.getElementById('colValor').style.display = 'table-cell';
+                document.getElementById('colFactura').style.display = 'table-cell';
+                document.getElementById('btnExportar').style.display = 'inline-block';
+            }
+            
+            cargarRegistros();
+            
+            // Agregar event listener al select de ciudad
+            const ciudadSelect = document.getElementById('ciudadSelect');
+            if (ciudadSelect) {
+                ciudadSelect.addEventListener('change', toggleOtraCiudad);
+            }
+        }
+
+        function cerrarSesion() {
+            usuarioActual = null;
+            
+            // Ocultar campos de admin
+            document.getElementById('grupoAdminFields').style.display = 'none';
+            document.getElementById('colValor').style.display = 'none';
+            document.getElementById('colFactura').style.display = 'none';
+            document.getElementById('btnExportar').style.display = 'none';
+            
+            // Limpiar tabla
+            document.querySelector('#tablaRegistros tbody').innerHTML = '';
+            
+            // Mostrar login
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainScreen').style.display = 'none';
+            document.getElementById('loginForm').reset();
+        }
+
+        // ===== CRUD =====
+        async function cargarRegistros() {
+            try {
+                const response = await fetch('/api/despachos');
+                const registros = await response.json();
+                
+                const tbody = document.querySelector('#tablaRegistros tbody');
+                tbody.innerHTML = '';
+                
+                registros.forEach(reg => {
+                    const tr = document.createElement('tr');
+                    let html = `
+                        <td>${reg.fecha}</td>
+                        <td>${reg.serie}</td>
+                        <td>${reg.modelo_maquina}</td>
+                        <td>${reg.cliente}</td>
+                    `;
+                    
+                    if (usuarioActual.rol === 'administrador') {
+                        html += `
+                            <td>$${reg.valor || 0}</td>
+                            <td>${reg.factura || '-'}</td>
+                        `;
+                    }
+                    
+                    html += `
+                        <td>${reg.ciudad}</td>
+                        <td>${reg.logo}</td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="editarRegistro(${reg.id})">✏️</button>
+                            <button class="btn-delete" onclick="eliminarRegistro(${reg.id})">🗑️</button>
+                        </td>
+                    `;
+                    
+                    tr.innerHTML = html;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                alert('Error al cargar registros');
+            }
+        }
+
+        function abrirModal() {
+            document.getElementById('modalTitle').textContent = 'Nuevo Registro';
+            document.getElementById('formRegistro').reset();
+            registroEditando = null;
+            
+            // Resetear campo "Otra ciudad"
+            document.getElementById('otraCiudadContainer').style.display = 'none';
+            document.getElementById('otraCiudad').required = false;
+            
+            // Asegurar que los campos de admin estén visibles/ocultos según el rol
+            if (usuarioActual.rol === 'administrador') {
+                document.getElementById('grupoAdminFields').style.display = 'grid';
+            } else {
+                document.getElementById('grupoAdminFields').style.display = 'none';
+            }
+            
+            document.getElementById('modalRegistro').style.display = 'block';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalRegistro').style.display = 'none';
+        }
+
+        document.getElementById('formRegistro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Determinar ciudad final
+            const ciudadSelect = document.getElementById('ciudadSelect').value;
+            const ciudadFinal = ciudadSelect === 'Otra' 
+                ? document.getElementById('otraCiudad').value 
+                : ciudadSelect;
+            
+            const datos = {
+                fecha: document.getElementById('fecha').value,
+                serie: document.getElementById('serie').value,
+                modelo_maquina: document.getElementById('modelo_maquina').value,
+                cliente: document.getElementById('cliente').value,
+                valor: document.getElementById('valor').value || null,
+                factura: document.getElementById('factura').value || null,
+                ciudad: ciudadFinal,
+                logo: document.getElementById('logo').value,
+                created_by: usuarioActual.username
+            };
+            
+            try {
+                const url = registroEditando ? `/api/despachos/${registroEditando}` : '/api/despachos';
+                const method = registroEditando ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+                
+                if (response.ok) {
+                    cerrarModal();
+                    cargarRegistros();
+                    alert('✅ Registro guardado exitosamente');
+                } else {
+                    // Manejar errores
+                    const error = await response.json();
+                    if (response.status === 400 && error.message) {
+                        alert('❌ ' + error.message);
+                    } else {
+                        alert('❌ Error al guardar el registro');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error de conexión. Verifica que el servidor esté corriendo.');
+            }
+        });
+
+        async function editarRegistro(id) {
+            try {
+                const response = await fetch('/api/despachos');
+                const registros = await response.json();
+                const registro = registros.find(r => r.id === id);
+                
+                if (registro) {
+                    document.getElementById('modalTitle').textContent = 'Editar Registro';
+                    document.getElementById('fecha').value = registro.fecha;
+                    document.getElementById('serie').value = registro.serie;
+                    document.getElementById('modelo_maquina').value = registro.modelo_maquina;
+                    document.getElementById('cliente').value = registro.cliente;
+                    document.getElementById('valor').value = registro.valor || '';
+                    document.getElementById('factura').value = registro.factura || '';
+                    
+                    // Manejar ciudad
+                    const ciudadSelect = document.getElementById('ciudadSelect');
+                    const ciudadEnLista = Array.from(ciudadSelect.options).some(opt => opt.value === registro.ciudad);
+                    
+                    if (ciudadEnLista) {
+                        ciudadSelect.value = registro.ciudad;
+                        document.getElementById('otraCiudadContainer').style.display = 'none';
+                        document.getElementById('otraCiudad').required = false;
+                    } else {
+                        ciudadSelect.value = 'Otra';
+                        document.getElementById('otraCiudadContainer').style.display = 'block';
+                        document.getElementById('otraCiudad').value = registro.ciudad;
+                        document.getElementById('otraCiudad').required = true;
+                    }
+                    
+                    document.getElementById('logo').value = registro.logo;
+                    
+                    registroEditando = id;
+                    document.getElementById('modalRegistro').style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error al cargar registro');
+            }
+        }
+
+        async function eliminarRegistro(id) {
+            if (!confirm('¿Está seguro de eliminar este registro?')) return;
+            
+            try {
+                const response = await fetch(`/api/despachos/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    cargarRegistros();
+                    alert('Registro eliminado');
+                }
+            } catch (error) {
+                alert('Error al eliminar registro');
+            }
+        }
+
+        async function exportarCSV() {
+    try {
+        const response = await fetch('/api/despachos');
+        const registros = await response.json();
+        
+        // Crear encabezados según el rol
+        let csv = '';
+        if (usuarioActual.rol === 'administrador') {
+            csv = 'Fecha,Serie,Modelo,Cliente,Valor,Factura,Ciudad,Logo\n';
+            
+            // Agregar datos
+            registros.forEach(reg => {
+                csv += `${reg.fecha},"${reg.serie}","${reg.modelo_maquina}","${reg.cliente}",${reg.valor || 0},"${reg.factura || ''}","${reg.ciudad}","${reg.logo}"\n`;
+            });
+        } else {
+            csv = 'Fecha,Serie,Modelo,Cliente,Ciudad,Logo\n';
+            
+            // Agregar datos
+            registros.forEach(reg => {
+                csv += `${reg.fecha},"${reg.serie}","${reg.modelo_maquina}","${reg.cliente}","${reg.ciudad}","${reg.logo}"\n`;
+            });
+        }
+        
+        // Crear Blob con BOM para UTF-8 (soluciona problema de tildes)
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+        
+        // Descargar archivo
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `despachos_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        alert('✅ CSV exportado correctamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al exportar CSV');
+    }
+}
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = (e) => {
+            const modal = document.getElementById('modalRegistro');
+            if (e.target === modal) cerrarModal();
+        };
+    </script>
+</body>
+</html>
